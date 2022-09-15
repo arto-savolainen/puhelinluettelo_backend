@@ -4,7 +4,16 @@ const morgan = require('morgan')
 const app = express()
 
 app.use(express.json())
-app.use(morgan('tiny'))
+
+morgan.token('postData', (req, res) => {
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return null
+  }
+
+  return JSON.stringify(req.body)
+})
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :postData'))
 
 const getRandomId = () => {
   return Math.floor(Math.random() * 1000000000);
