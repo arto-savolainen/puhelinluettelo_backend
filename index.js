@@ -2,6 +2,17 @@ const { response } = require('express')
 const express = require('express')
 const app = express()
 
+const deletePerson = (id) => {
+  const personIndex = persons.findIndex(x => x.id === id)
+
+  if (personIndex >= 0) {
+    persons.splice(personIndex, 1)
+    return true
+  }
+  
+  return false
+}
+
 let persons = [
   {
     "name": "Arto Hellas",
@@ -25,6 +36,8 @@ let persons = [
   }
 ]
 
+
+
 app.get('/info', (req, res) => {
   res.send(`<div>Phonebook has info for ${persons.length} people</div><div>${Date()}</div>`)
 })
@@ -40,8 +53,20 @@ app.get('/api/persons/:id', (req, res) => {
   if (!person) {
     res.status(404).end()
   }
+  else {
+    res.json(person)
+  }
+})
 
-  res.json(person)
+app.delete('/api/persons/:id', (req, res) => {
+  const id = Number(req.params.id)
+
+  if (!deletePerson(id)) {
+    res.status(404).end()
+  }
+  else {
+    res.send(`Succesfully deleted person with id ${id}`)
+  }
 })
 
 const PORT = 3001
