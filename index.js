@@ -1,16 +1,10 @@
-const { response } = require('express')
 const express = require('express')
 const app = express()
 
-const deletePerson = (id) => {
-  const personIndex = persons.findIndex(x => x.id === id)
+app.use(express.json())
 
-  if (personIndex >= 0) {
-    persons.splice(personIndex, 1)
-    return true
-  }
-  
-  return false
+const getRandomId = () => {
+  return Math.floor(Math.random() * 1000000000);
 }
 
 let persons = [
@@ -36,8 +30,6 @@ let persons = [
   }
 ]
 
-
-
 app.get('/info', (req, res) => {
   res.send(`<div>Phonebook has info for ${persons.length} people</div><div>${Date()}</div>`)
 })
@@ -51,22 +43,50 @@ app.get('/api/persons/:id', (req, res) => {
   const person = persons.find(x => x.id === id)
 
   if (!person) {
-    res.status(404).end()
+    return res.status(404).end()
   }
   else {
-    res.json(person)
+    return res.json(person)
   }
 })
 
 app.delete('/api/persons/:id', (req, res) => {
   const id = Number(req.params.id)
+  const personIndex = persons.findIndex(x => x.id === id)
 
-  if (!deletePerson(id)) {
-    res.status(404).end()
+  if (personIndex >= 0) {
+    persons.splice(personIndex, 1)
+    return res.send(`Succesfully deleted person with id ${id}`)
   }
   else {
-    res.send(`Succesfully deleted person with id ${id}`)
+    return res.status(404).end()
   }
+})
+
+app.post('/api/persons/', (req, res) => {
+  const body = req.body
+
+  if (!body.name || !body.number) {
+    return res.status(401).json({ error: 'data must contain name and number' })
+  }
+  else if (persons.find(x => x.name === body.name)) { 
+    return res.status(400).json({ error: 'name must be unique' })
+  }
+
+  let newId = getRandomId()
+  //this should be removed when the database is larger & id generation should be unique
+  while (persons.find(x => x.id === newId)) {
+    newId = getRandomId()
+  }
+
+  const newPerson = {
+    name: body.name,
+    number: body.number,
+    id: newId
+  }
+
+  persons.push(newPerson)
+  return res.json(newPerson)
 })
 
 const PORT = 3001
