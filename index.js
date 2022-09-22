@@ -1,10 +1,11 @@
 const express = require('express')
 const morgan = require('morgan')
-
+const cors = require('cors')
 const app = express()
 
 app.use(express.json())
 app.use(express.static('build'))
+app.use(cors())
 
 morgan.token('postData', (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -102,7 +103,9 @@ app.post('/api/persons/', (req, res) => {
   return res.json(newPerson)
 })
 
-const PORT = 3001
+//const PORT = 3001
+//käytetään fly.io ympäristömuuttuja PORT
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

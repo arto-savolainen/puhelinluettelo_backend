@@ -1,1 +1,1 @@
-DELETE http://localhost:3001/api/persons/2
+DELETE https://puhelinluetteloftw.fly.dev/api/persons/4
