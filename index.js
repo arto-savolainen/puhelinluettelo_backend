@@ -105,7 +105,8 @@ app.post('/api/persons/', (req, res) => {
 
 //const PORT = 3001
 //käytetään fly.io ympäristömuuttuja PORT
-const PORT = process.env.PORT
+let PORT = process.env.PORT
+if (!PORT) { PORT = 3001 }
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
