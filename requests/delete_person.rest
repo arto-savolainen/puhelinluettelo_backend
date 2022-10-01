@@ -1,1 +1,1 @@
-DELETE https://puhelinluetteloftw.fly.dev/api/persons/4
+DELETE localhost:3001/api/persons/632cd30db990123c6b3e5072

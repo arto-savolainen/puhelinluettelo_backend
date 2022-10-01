@@ -1,7 +1,18 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
+
+const MISSING_DATA_ERROR = { 
+  name: 'MissingDataError',
+  message: 'must include name and number',
+ }
+const NAME_EXISTS_ERROR = {
+  name: 'NameExistsError',
+  message: 'name must be unique',
+}
 
 app.use(express.json())
 app.use(express.static('build'))
@@ -17,94 +28,113 @@ morgan.token('postData', (req, res) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :postData'))
 
-const getRandomId = () => {
-  return Math.floor(Math.random() * 1000000000);
-}
-
-let persons = [
-  {
-    "name": "Arto Hellas",
-    "number": "040-123456",
-    "id": 1
-  },
-  {
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523",
-    "id": 2
-  },
-  {
-    "name": "Dan Abramov",
-    "number": "12-43-234345",
-    "id": 3
-  },
-  {
-    "name": "Mary Poppendick",
-    "number": "39-23-6423122",
-    "id": 4
-  }
-]
-
-app.get('/info', (req, res) => {
-  res.send(`<div>Phonebook has info for ${persons.length} people</div><div>${Date()}</div>`)
+app.get('/info', (req, res, next) => {
+  Person.find({}).then(persons => {  
+    res.send(`<div>Phonebook has info for ${persons.length} people</div><div>${Date()}</div>`)
+  })
+  .catch(error => next(error))
 })
 
-app.get('/api/persons', (req, res) => {
-  res.json(persons)
+app.get('/api/persons', (req, res, next) => {
+  Person.find({})
+  .then(persons => {  
+    res.json(persons)
+  })
+  .catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const person = persons.find(x => x.id === id)
-
-  if (!person) {
-    return res.status(404).end()
-  }
-  else {
-    return res.json(person)
-  }
+app.get('/api/persons/:id', (req, res, next) => {
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) {
+        res.json(person)
+      }
+      else {
+        res.status(404).end()
+      }
+    })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const personIndex = persons.findIndex(x => x.id === id)
-
-  if (personIndex >= 0) {
-    persons.splice(personIndex, 1)
-    return res.send(`Succesfully deleted person with id ${id}`)
-  }
-  else {
-    return res.status(404).end()
-  }
+app.delete('/api/persons/:id', (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+  .then(response => {
+    if (response) {
+      res.json(response)
+    }
+    else {
+      res.status(404).end()
+    }
+  })
+  .catch(error => next(error))
 })
 
-app.post('/api/persons/', (req, res) => {
+app.post('/api/persons/', (req, res, next) => {
   const body = req.body
 
   if (!body.name || !body.number) {
-    return res.status(401).json({ error: 'data must contain name and number' })
-  }
-  else if (persons.find(x => x.name === body.name)) { 
-    return res.status(400).json({ error: 'name must be unique' })
+    return next(MISSING_DATA_ERROR)
   }
 
-  let newId = getRandomId()
-  //this should be removed when the database is larger & id generation should be unique
-  while (persons.find(x => x.id === newId)) {
-    newId = getRandomId()
-  }
+  Person.exists({ name: body.name })
+    .then(result => {
+      //if exists() returns something other than null, person with body.name already exists
+      if (result) {
+        next(NAME_EXISTS_ERROR)
+      }
+      else {
+        const newPerson = new Person({
+          name: body.name,
+          number: body.number,
+        })
 
-  const newPerson = {
-    name: body.name,
-    number: body.number,
-    id: newId
-  }
-
-  persons.push(newPerson)
-  return res.json(newPerson)
+        newPerson.save().then(savedPerson => {
+          res.json(savedPerson)
+        })
+          .catch(error => next(error))
+      }
+    })
+    .catch(error => next(error))
 })
 
-//const PORT = 3001
-//käytetään fly.io ympäristömuuttuja PORT
+app.put('/api/persons/:id', (req, res, next) => {
+  body = req.body
+
+  if (!body.name || !body.number) {
+    return next(MISSING_DATA_ERROR)
+  }
+
+  Person.findByIdAndUpdate(req.params.id, { number: body.number })
+    .then((response) => {
+      if (response) {
+        res.status(200).end()
+      }
+      else {
+        res.status(404).end()
+      }
+    })
+    .catch(error => next(error))
+})
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+  if (error.name === 'MissingDataError') {
+    return response.status(400).send({ error: error.message })
+  }
+  if (error.name === 'NameExistsError') {
+    return response.status(400).send({ error: error.message })
+  }
+
+  next(error)
+}
+
+// tämä tulee kaikkien muiden middlewarejen ja routejen rekisteröinnin jälkeen!
+app.use(errorHandler)
+
+//käytetään fly.io tai lokaalia .env ympäristömuuttujaa PORT
 let PORT = process.env.PORT
 if (!PORT) { PORT = 3001 }
 app.listen(PORT, () => {
