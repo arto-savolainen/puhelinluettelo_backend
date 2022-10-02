@@ -34,7 +34,7 @@ if (process.argv.length < 4) {
   })
 }
 
-else if (process.argv.length === 4) { 
+else if (process.argv.length === 4) {
   console.log('Error: Must include both name and number')
   exit()
 }
@@ -47,8 +47,8 @@ else {
     name: name,
     number: number,
   })
-  
-  person.save().then(result => {
+
+  person.save().then(() => {
     console.log(`added ${name} number ${number} to phonebook`)
     exit()
   })

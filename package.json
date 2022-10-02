@@ -10,7 +10,8 @@
     "build:ui": "rm -rf build && cd ../Fullstack/osa2/puhelinluettelo && npm run build && cp -r build ../../../puhelinluettelo_backend",
     "deploy": "flyctl deploy",
     "deploy:full": "npm run build:ui && npm run deploy",
-    "logs:prod": "flyctl logs"
+    "logs:prod": "flyctl logs",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
   },
   "homepage": "https://github.com/arto-savolainen/puhelinluettelo_backend#readme",
   "devDependencies": {
+    "eslint": "^8.24.0",
     "nodemon": "^2.0.19"
   },
   "dependencies": {
